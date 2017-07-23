@@ -8,16 +8,13 @@
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
+#include "trajectory_generation.hpp"
+#include "utils.hpp"
 
 using namespace std;
 
 // for convenience
 using json = nlohmann::json;
-
-// For converting back and forth between radians and degrees.
-constexpr double pi() { return M_PI; }
-double deg2rad(double x) { return x * pi() / 180; }
-double rad2deg(double x) { return x * 180 / pi(); }
 
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
@@ -159,48 +156,6 @@ vector<double> getXY(double s, double d, vector<double> maps_s, vector<double> m
 
 }
 
-vector<vector<double>> calculateNextValues(double car_x, double car_y, double car_s, double car_d, double car_yaw, double car_speed, vector<double> previous_path_x, vector<double> previous_path_y) {
-  vector<double> next_x_vals;
-  vector<double> next_y_vals;
-
-  double pos_x;
-  double pos_y;
-  double angle;
-  int path_size = previous_path_x.size();
-
-  for(int i = 0; i < path_size; i++)
-  {
-     next_x_vals.push_back(previous_path_x[i]);
-     next_y_vals.push_back(previous_path_y[i]);
-  }
-
-  if(path_size == 0)
-  {
-     pos_x = car_x;
-     pos_y = car_y;
-     angle = deg2rad(car_yaw);
-  }
-  else
-  {
-     pos_x = previous_path_x[path_size-1];
-     pos_y = previous_path_y[path_size-1];
-
-     double pos_x2 = previous_path_x[path_size-2];
-     double pos_y2 = previous_path_y[path_size-2];
-     angle = atan2(pos_y-pos_y2,pos_x-pos_x2);
-  }
-
-  double dist_inc = 0.5;
-  for(int i = 0; i < 50-path_size; i++)
-  {
-     next_x_vals.push_back(pos_x+(dist_inc)*cos(angle+(i+1)*(pi()/100)));
-     next_y_vals.push_back(pos_y+(dist_inc)*sin(angle+(i+1)*(pi()/100)));
-     pos_x += (dist_inc)*cos(angle+(i+1)*(pi()/100));
-     pos_y += (dist_inc)*sin(angle+(i+1)*(pi()/100));
-  }
-  return {next_x_vals, next_y_vals};
-}
-
 int main() {
   uWS::Hub h;
 
@@ -238,7 +193,8 @@ int main() {
   	map_waypoints_dy.push_back(d_y);
   }
 
-  h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+  TrajectoryGeneration trajectory_generation(map_waypoints_x, map_waypoints_y, map_waypoints_s, map_waypoints_dx, map_waypoints_dy);
+  h.onMessage([&trajectory_generation, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -276,7 +232,7 @@ int main() {
           	auto sensor_fusion = j[1]["sensor_fusion"];
 
           	json msgJson;
-            auto next_vals = calculateNextValues(car_x, car_y, car_s, car_d, car_yaw, car_speed, previous_path_x, previous_path_y);
+            auto next_vals = trajectory_generation.generate(car_x, car_y, car_s, car_d, car_yaw, car_speed, previous_path_x, previous_path_y);
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
           	msgJson["next_x"] = next_vals[0];
           	msgJson["next_y"] = next_vals[1];
