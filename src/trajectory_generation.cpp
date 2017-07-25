@@ -7,6 +7,10 @@ TrajectoryGeneration::TrajectoryGeneration(vector<double> map_waypoints_x, vecto
   this->map_waypoints_s = map_waypoints_s;
   this->map_waypoints_dx = map_waypoints_dx;
   this->map_waypoints_dy = map_waypoints_dy;
+  this->spline_waypoints_x.set_points(map_waypoints_s, map_waypoints_x);
+  this->spline_waypoints_y.set_points(map_waypoints_s, map_waypoints_y);
+  this->spline_waypoints_dx.set_points(map_waypoints_s, map_waypoints_dx);
+  this->spline_waypoints_dy.set_points(map_waypoints_s, map_waypoints_dy);
 }
 
 vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y, double car_s, double car_d, double car_yaw, double car_speed, vector<double> previous_path_x, vector<double> previous_path_y) {
@@ -40,14 +44,20 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
      angle = atan2(pos_y-pos_y2,pos_x-pos_x2);
   }
 
-  auto freenet = getFrenet(car_x, car_y, car_yaw, map_waypoints_x, map_waypoints_y);
+  auto freenet = getFrenet(pos_x, pos_y, angle, map_waypoints_x, map_waypoints_y);
   double dist_inc = 0.5;
   for(int i = 0; i < 50-path_size; i++)
   {
-  //    next_x_vals.push_back(pos_x+(dist_inc)*cos(angle+(i+1)*(pi()/100)));
-  //    next_y_vals.push_back(pos_y+(dist_inc)*sin(angle+(i+1)*(pi()/100)));
-  //    pos_x += (dist_inc)*cos(angle+(i+1)*(pi()/100));
-  //    pos_y += (dist_inc)*sin(angle+(i+1)*(pi()/100));
+    double s = freenet[0]+(dist_inc*i);
+    double d = freenet[1];
+    cout << "s: " << s << " d: " << d << endl;
+    int lane = 2;
+    double lane_center = this->lane_width/2 + lane*this->lane_width;
+    double x = this->spline_waypoints_x(s) + this->spline_waypoints_dx(s)*(lane_center);
+    double y = this->spline_waypoints_y(s) + this->spline_waypoints_dy(s)*(lane_center);
+    cout << "x: " << x << " y: " << y << endl;
+    next_x_vals.push_back(x);
+    next_y_vals.push_back(y);
   }
   return {next_x_vals, next_y_vals};
 }

@@ -1,4 +1,6 @@
 #include <vector>
+#include "spline.h"
+
 using namespace std;
 
 class TrajectoryGeneration {
@@ -13,4 +15,9 @@ private:
   vector<double> map_waypoints_s;
   vector<double> map_waypoints_dx;
   vector<double> map_waypoints_dy;
+  tk::spline spline_waypoints_x;
+  tk::spline spline_waypoints_y;
+  tk::spline spline_waypoints_dx;
+  tk::spline spline_waypoints_dy;
+  double lane_width = 4;
 };
