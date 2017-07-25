@@ -40,14 +40,14 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
      angle = atan2(pos_y-pos_y2,pos_x-pos_x2);
   }
 
+  auto freenet = getFrenet(car_x, car_y, car_yaw, map_waypoints_x, map_waypoints_y);
   double dist_inc = 0.5;
   for(int i = 0; i < 50-path_size; i++)
   {
-     next_x_vals.push_back(pos_x+(dist_inc)*cos(angle+(i+1)*(pi()/100)));
-     next_y_vals.push_back(pos_y+(dist_inc)*sin(angle+(i+1)*(pi()/100)));
-     pos_x += (dist_inc)*cos(angle+(i+1)*(pi()/100));
-     pos_y += (dist_inc)*sin(angle+(i+1)*(pi()/100));
+  //    next_x_vals.push_back(pos_x+(dist_inc)*cos(angle+(i+1)*(pi()/100)));
+  //    next_y_vals.push_back(pos_y+(dist_inc)*sin(angle+(i+1)*(pi()/100)));
+  //    pos_x += (dist_inc)*cos(angle+(i+1)*(pi()/100));
+  //    pos_y += (dist_inc)*sin(angle+(i+1)*(pi()/100));
   }
-  // cout << getFrenet(car_x, car_y, car_yaw, vector<double> maps_x, vector<double> maps_y) << endl;
   return {next_x_vals, next_y_vals};
 }
