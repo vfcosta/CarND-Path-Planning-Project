@@ -1,5 +1,10 @@
 #include "trajectory_generation.hpp"
 #include "utils.hpp"
+#include "Eigen-3.3/Eigen/Core"
+#include "Eigen-3.3/Eigen/LU"
+
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 TrajectoryGeneration::TrajectoryGeneration(vector<double> map_waypoints_x, vector<double> map_waypoints_y, vector<double> map_waypoints_s, vector<double> map_waypoints_dx, vector<double> map_waypoints_dy) {
   this->map_waypoints_x = map_waypoints_x;
@@ -11,6 +16,25 @@ TrajectoryGeneration::TrajectoryGeneration(vector<double> map_waypoints_x, vecto
   this->spline_waypoints_y.set_points(map_waypoints_s, map_waypoints_y);
   this->spline_waypoints_dx.set_points(map_waypoints_s, map_waypoints_dx);
   this->spline_waypoints_dy.set_points(map_waypoints_s, map_waypoints_dy);
+}
+
+vector<double> TrajectoryGeneration::JMT(vector<double> start, vector<double> end, double T) {
+  double alpha0 = start[0];
+  double alpha1 = start[1];
+  double alpha2 = start[2]/2.0;
+    
+  MatrixXd A(3,3);
+  A << pow(T, 3),   pow(T, 4),    pow(T, 5),
+        3*pow(T, 2), 4*pow(T, 3),  5*pow(T, 4),
+        6*T,         12*pow(T, 2), 20*pow(T, 3);
+  VectorXd b(3);
+  b << end[0] - (start[0] + start[1]*T + 0.5*start[2]*T*T),
+        end[1] - (start[1] + start[2]*T),
+        end[2] - start[2];
+  
+  MatrixXd Ai = A.inverse();
+	MatrixXd C = Ai*b;
+  return {alpha0, alpha1, alpha2, C.data()[0], C.data()[1], C.data()[2]};
 }
 
 vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y, double car_s, double car_d, double car_yaw, double car_speed, vector<double> previous_path_x, vector<double> previous_path_y) {
@@ -53,8 +77,11 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
     cout << "s: " << s << " d: " << d << endl;
     int lane = 2;
     double lane_center = this->lane_width/2 + lane*this->lane_width;
+    // TODO: consider X,Y as target and apply JMT to reach it
     double x = this->spline_waypoints_x(s) + this->spline_waypoints_dx(s)*(lane_center);
     double y = this->spline_waypoints_y(s) + this->spline_waypoints_dy(s)*(lane_center);
+    auto coeff = JMT({s-(dist_inc*i), car_speed, 0}, {s, car_speed, 0}, 1);
+    cout << "coeff: " << coeff[0] << ", " << coeff[1] << ", " << coeff[2] << ", " << coeff[3] << ", " << coeff[4] << ", " << coeff[5] << endl;
     cout << "x: " << x << " y: " << y << endl;
     next_x_vals.push_back(x);
     next_y_vals.push_back(y);
