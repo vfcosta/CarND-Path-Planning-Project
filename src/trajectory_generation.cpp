@@ -45,6 +45,7 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
   double pos_y;
   double angle;
   int path_size = previous_path_x.size();
+  // if (path_size > 50) path_size = 50;
 
   for(int i = 0; i < path_size; i++)
   {
@@ -69,22 +70,44 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
   }
 
   auto freenet = getFrenet(pos_x, pos_y, angle, map_waypoints_x, map_waypoints_y);
-  double dist_inc = 0.5;
-  for(int i = 0; i < 50-path_size; i++)
+  int next_waypoint = NextWaypoint(pos_x, pos_y, angle, map_waypoints_x, map_waypoints_y);
+  double dist_inc = this->map_waypoints_s[next_waypoint] - freenet[0];
+  // for(int i = 0; i < 1-path_size; i++)
+  int i = 0;
+  if (path_size < 200)
   {
-    double s = freenet[0]+(dist_inc*i);
+    double s = freenet[0]+0.01*car_speed;
+    double goal_s = s+(dist_inc*(i+1));
     double d = freenet[1];
-    cout << "s: " << s << " d: " << d << endl;
-    int lane = 2;
+    cout << "s: " << s << " d: " << d << " speed: " << car_speed << " angle: " << angle << endl;
+    int lane = 1;
     double lane_center = this->lane_width/2 + lane*this->lane_width;
     // TODO: consider X,Y as target and apply JMT to reach it
-    double x = this->spline_waypoints_x(s) + this->spline_waypoints_dx(s)*(lane_center);
-    double y = this->spline_waypoints_y(s) + this->spline_waypoints_dy(s)*(lane_center);
-    auto coeff = JMT({s-(dist_inc*i), car_speed, 0}, {s, car_speed, 0}, 1);
-    cout << "coeff: " << coeff[0] << ", " << coeff[1] << ", " << coeff[2] << ", " << coeff[3] << ", " << coeff[4] << ", " << coeff[5] << endl;
-    cout << "x: " << x << " y: " << y << endl;
-    next_x_vals.push_back(x);
-    next_y_vals.push_back(y);
+    // double x = this->spline_waypoints_x(s) + this->spline_waypoints_dx(s)*(lane_center);
+    // double y = this->spline_waypoints_y(s) + this->spline_waypoints_dy(s)*(lane_center);
+
+    cout << "current s: " << s << " goal s: " << goal_s << endl;
+    double goal_speed = 15.0;
+    double time = dist_inc/goal_speed;
+    auto coeff = JMT({s, car_speed, 0}, {goal_s, goal_speed, 0}, time);
+    double delay = 0.02;
+    // for(int j=0; j<time/delay; j++) {
+    for(int j=0; j<2000; j++) {
+      if (s>goal_s) break;
+      double t = delay * j;
+      double total = 0;
+      for(int k=0; k<coeff.size(); k++) {
+        total += coeff[k]*pow(t, k);
+      }
+      s = total;
+      double x = this->spline_waypoints_x(s) + this->spline_waypoints_dx(s)*(lane_center);
+      double y = this->spline_waypoints_y(s) + this->spline_waypoints_dy(s)*(lane_center);
+      cout << "JMT s: " << s << endl;
+      // cout << "coeff: " << coeff[0] << ", " << coeff[1] << ", " << coeff[2] << ", " << coeff[3] << ", " << coeff[4] << ", " << coeff[5] << endl;
+      // cout << "x: " << x << " y: " << y << endl;
+      next_x_vals.push_back(x);
+      next_y_vals.push_back(y);
+    }
   }
   return {next_x_vals, next_y_vals};
 }
