@@ -79,32 +79,41 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
     double goal_s = s + dist_inc;
     double d = freenet[1];
     cout << "s: " << s << " d: " << d << " speed: " << car_speed << " angle: " << angle << endl;
-    int lane = 1;
+
+    // TODO: random change lane
+    int lane_diff = (rand() % static_cast<int>(3)) - 1;
+    double goal_d = max(2.0, min(d + lane_diff * this->lane_width, 10.0));
+
     cout << "current s: " << s << " goal s: " << goal_s << endl;
     double goal_speed = 15.0;
     double time = dist_inc/goal_speed;
-    jmtTrajectory({s, car_speed, 0}, {goal_s, goal_speed, 0}, time, lane, next_x_vals, next_y_vals);
+    jmtTrajectory(s, goal_s, car_speed, goal_speed, d, goal_d, time, next_x_vals, next_y_vals);
   }
   return {next_x_vals, next_y_vals};
 }
 
-void TrajectoryGeneration::jmtTrajectory(vector<double> start, vector<double> end, double time, int lane, vector<double> &next_x_vals, vector<double> &next_y_vals) {
-    auto coeff = JMT(start, end, time);
+void TrajectoryGeneration::jmtTrajectory(double s, double goal_s, double car_speed, double goal_speed, double d, double goal_d, double time, vector<double> &next_x_vals, vector<double> &next_y_vals) {
+    auto s_coeff = JMT({s, car_speed, 0}, {goal_s, goal_speed, 0}, time);
+    auto d_coeff = JMT({d, 0, 0}, {goal_d, 0, 0}, time);
     double delay = 0.02;
-    double lane_center = this->lane_width/2 + lane*this->lane_width;
     double t = 0;
     while(t < time) {
       t += delay;
       // evaluate equation using JMT coefficients
       double s_proj = 0;
-      for(int k=0; k<coeff.size(); k++) {
-        s_proj += coeff[k]*pow(t, k);
+      for(int k=0; k<s_coeff.size(); k++) {
+        s_proj += s_coeff[k]*pow(t, k);
       }
+      double d_proj = 0;
+      for(int k=0; k<s_coeff.size(); k++) {
+        d_proj += d_coeff[k]*pow(t, k);
+      }
+
       // transform from frenet to XY using fitted spline
-      double x = this->spline_waypoints_x(s_proj) + this->spline_waypoints_dx(s_proj)*(lane_center);
-      double y = this->spline_waypoints_y(s_proj) + this->spline_waypoints_dy(s_proj)*(lane_center);
-      cout << "JMT s: " << s_proj << endl;
-      // cout << "coeff: " << coeff[0] << ", " << coeff[1] << ", " << coeff[2] << ", " << coeff[3] << ", " << coeff[4] << ", " << coeff[5] << endl;
+      double x = this->spline_waypoints_x(s_proj) + this->spline_waypoints_dx(s_proj)*(d_proj);
+      double y = this->spline_waypoints_y(s_proj) + this->spline_waypoints_dy(s_proj)*(d_proj);
+      cout << "JMT s: " << s_proj << " d: " << d_proj << endl;
+      // cout << "s_coeff: " << s_coeff[0] << ", " << s_coeff[1] << ", " << s_coeff[2] << ", " << s_coeff[3] << ", " << s_coeff[4] << ", " << s_coeff[5] << endl;
       // cout << "x: " << x << " y: " << y << endl;
       next_x_vals.push_back(x);
       next_y_vals.push_back(y);
