@@ -20,15 +20,19 @@ Vehicle::Vehicle(Frenet frenet) {
 Vehicle::~Vehicle() {}
 
 void Vehicle::update_data(double car_x, double car_y, double car_s, double car_d, double car_yaw, double car_speed, double dt) {
-  auto sd = frenet.fromXY(car_x, car_y, car_yaw);
-  if (this->lane == -1) {
-    this->lane = sd[1]/lane_width; // initialize lane
-  }
   // double new_v = (sd[0] - this->s)/dt;
+  this->vx = (car_x - this->x)/dt;
+  this->vy = (car_y - this->y)/dt;
   double new_v = car_speed;
-  this->s = sd[0];
-  this->a = new_v - this->v;
+  this->s = car_s;
+  this->d = car_d;
+  this->a = (new_v - this->v)/dt;
   this->v = new_v;
+  this->x = car_x;
+  this->y = car_y;
+  if (this->lane == -1) {
+    this->lane = current_lane(); // initialize lane
+  }
   // cout << "dt: " << dt << ", LANE: " << this->lane << ", a: " << a << ", v: " << v << ", s: " << s << ", d: " << sd[1] << endl;
 }
 
@@ -365,4 +369,8 @@ vector<vector<double> > Vehicle::generate_predictions(int horizon = 10) {
   	}
     return predictions;
 
+}
+
+int Vehicle::current_lane() {
+  return d/lane_width;
 }

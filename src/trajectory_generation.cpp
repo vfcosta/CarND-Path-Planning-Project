@@ -39,35 +39,33 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
   int path_size = previous_path_x.size();
   // if (path_size > 10) path_size = 10;
 
-  for(int i = 0; i < path_size; i++)
-  {
+  // copy previous path to next vals
+  for(int i = 0; i < path_size; i++) {
      next_x_vals.push_back(previous_path_x[i]);
      next_y_vals.push_back(previous_path_y[i]);
   }
-
-  if(path_size == 0)
-  {
+  // take cached vals into account when get current vehicle position
+  if(path_size == 0) {
      pos_x = car_x;
      pos_y = car_y;
      angle = deg2rad(car_yaw);
-  }
-  else
-  {
+  } else {
      pos_x = previous_path_x[path_size-1];
      pos_y = previous_path_y[path_size-1];
 
      double pos_x2 = previous_path_x[path_size-2];
      double pos_y2 = previous_path_y[path_size-2];
      angle = atan2(pos_y-pos_y2,pos_x-pos_x2);
+
+     auto previous_sd = frenet.fromXY(pos_x, pos_y, angle);
+     car_s = previous_sd[0];
+     car_d = previous_sd[1];
   }
   // cout << "speed: " << car_speed << " angle: " << angle << " path_size: " << path_size << " goal_d: " << goal_d << endl;
   if (path_size < 50)
   {
-    // TODO use spline to calculate frenet given x,y
-    auto sd = frenet.fromXY(pos_x, pos_y, angle);
+    vector<double> sd = {car_s, car_d};//frenet.fromXY(pos_x, pos_y, angle);
     auto nextSd = frenet.nextFromXY(pos_x, pos_y, angle);
-    // keepLaneTrajectory(sd, nextSd, car_speed, next_x_vals, next_y_vals);
-    // changeLaneTrajectory(sd, nextSd, car_speed, next_x_vals, next_y_vals);
     double goal_speed = 20.0;
     double time = (nextSd[0] - sd[0])/goal_speed;
     jmtTrajectory(sd[0], nextSd[0], car_speed, goal_speed, sd[1], goal_d, time, next_x_vals, next_y_vals);  

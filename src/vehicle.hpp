@@ -36,8 +36,13 @@ public:
   int lane = -1;
 
   double s;
+  double d;
+  double x;
+  double y;
 
   double v;
+  double vx;
+  double vy;
 
   double a;
 
@@ -66,6 +71,8 @@ public:
   string display();
 
   void increment(double dt);
+
+  int current_lane();
 
   vector<double> state_at(double t);
 
