@@ -9,7 +9,6 @@
 #include <map>
 #include <string>
 #include <iterator>
-#include "frenet.hpp"
 
 using namespace std;
 
@@ -20,8 +19,6 @@ private:
 
 public:
 
-  Frenet frenet;
-
   struct collider{
 
     bool collision ; // is there a collision?
@@ -31,7 +28,7 @@ public:
 
   int L = 1;
 
-  int preferred_buffer = 6; // impacts "keep lane" behavior.
+  int preferred_buffer = 8; // impacts "keep lane" behavior.
 
   int lane = -1;
 
@@ -46,9 +43,9 @@ public:
 
   double a;
 
-  int target_speed;
+  double target_speed;
 
-  int lanes_available;
+  double max_speed = 21;
 
   int max_acceleration;
 
@@ -57,7 +54,7 @@ public:
   /**
   * Constructor
   */
-  Vehicle(Frenet frenet);
+  Vehicle();
 
   /**
   * Destructor
@@ -66,7 +63,9 @@ public:
 
   void update_data(double car_x, double car_y, double car_s, double car_d, double car_yaw, double car_speed, double dt);
 
-  void update_state(map<int, vector <vector<double> > > predictions);
+  void initialize(double car_x, double car_y, double vx, double vy, double s, double d);
+
+  void update_state(vector<Vehicle> vehicles);
 
   string display();
 
@@ -76,26 +75,28 @@ public:
 
   vector<double> state_at(double t);
 
-  bool collides_with(Vehicle other, int at_time);
+  bool collides_with(Vehicle other, double at_time);
 
   collider will_collide_with(Vehicle other, int timesteps);
 
-  void realize_state(map<int, vector < vector<double> > > predictions);
+  void realize_state(vector<Vehicle> vehicles);
 
   void realize_constant_speed();
 
-  int _max_accel_for_lane(map<int,vector<vector<double> > > predictions, int lane, int s);
+  int _max_accel_for_lane(vector<Vehicle> vehicles, int lane, int s);
 
-  void realize_keep_lane(map<int, vector< vector<double> > > predictions);
+  void realize_keep_lane(vector<Vehicle> vehicles);
 
-  void realize_lane_change(map<int,vector< vector<double> > > predictions, string direction);
+  void realize_lane_change(vector<Vehicle> vehicles, string direction);
 
-  void realize_prep_lane_change(map<int,vector< vector<double> > > predictions, string direction);
+  void realize_prep_lane_change(vector<Vehicle> vehicles, string direction);
 
   vector<vector<double> > generate_predictions(int horizon);
 
   vector<string> get_possible_successor_states();
-  double safety_cost(vector < vector<double> > trajectory, map<int,vector < vector<double> > > predictions);
+  double safety_cost(vector < vector<double> > trajectory, vector<Vehicle> vehicles);
+  double speed_cost(vector<Vehicle> vehicles);
+  double lane_cost(vector<Vehicle> vehicles);
 };
 
 #endif

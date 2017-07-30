@@ -12,7 +12,7 @@
 #include "utils.hpp"
 #include "vehicle.hpp"
 
-#define PLANNING_PERIOD_SECONDS 2
+#define PLANNING_PERIOD_SECONDS 1
 
 using namespace std;
 
@@ -74,7 +74,7 @@ int main() {
   Frenet frenet;
   frenet.setup(map_waypoints_x, map_waypoints_y, map_waypoints_s, map_waypoints_dx, map_waypoints_dy);
   TrajectoryGeneration trajectory_generation(frenet);
-  Vehicle vehicle = Vehicle(frenet);
+  Vehicle vehicle = Vehicle();
   auto timestamp = std::chrono::steady_clock::now();
   double acc_dt = 0;
 
@@ -122,13 +122,21 @@ int main() {
           	json msgJson;
             vehicle.update_data(car_x, car_y, car_s, car_d, car_yaw, car_speed, dt);
             double goal_d = vehicle.lane * 4 + 2;
-            auto next_vals = trajectory_generation.generate(car_x, car_y, car_s, car_d, car_yaw, car_speed, goal_d, previous_path_x, previous_path_y);
+            double target_speed = vehicle.target_speed;
+            auto next_vals = trajectory_generation.generate(car_x, car_y, car_s, car_d, car_yaw, car_speed, goal_d, target_speed, previous_path_x, previous_path_y);
 
             if (acc_dt >= PLANNING_PERIOD_SECONDS) {
-              vehicle.update_state({});
-              vehicle.realize_state({});
+              vector<Vehicle> vehicles;
+              for(auto v_data : sensor_fusion) {
+                Vehicle v;
+                v.initialize(v_data[1], v_data[2], v_data[3], v_data[4], v_data[5], v_data[6]);
+                vehicles.push_back(v);
+              }
+
+              vehicle.update_state(vehicles);
+              vehicle.realize_state(vehicles);
               acc_dt = 0;
-              cout << "LANE : " << vehicle.lane << ", a: " << vehicle.a << endl;
+              // cout << "LANE: " << vehicle.lane << ", a: " << vehicle.a << endl;
             }
 
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds

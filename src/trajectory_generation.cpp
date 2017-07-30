@@ -29,7 +29,7 @@ vector<double> TrajectoryGeneration::JMT(vector<double> start, vector<double> en
   return {alpha0, alpha1, alpha2, C.data()[0], C.data()[1], C.data()[2]};
 }
 
-vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y, double car_s, double car_d, double car_yaw, double car_speed, double goal_d, vector<double> previous_path_x, vector<double> previous_path_y) {
+vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y, double car_s, double car_d, double car_yaw, double car_speed, double goal_d, double goal_speed, vector<double> previous_path_x, vector<double> previous_path_y) {
   vector<double> next_x_vals;
   vector<double> next_y_vals;
 
@@ -66,7 +66,6 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
   {
     vector<double> sd = {car_s, car_d};//frenet.fromXY(pos_x, pos_y, angle);
     auto nextSd = frenet.nextFromXY(pos_x, pos_y, angle);
-    double goal_speed = 20.0;
     double time = (nextSd[0] - sd[0])/goal_speed;
     jmtTrajectory(sd[0], nextSd[0], car_speed, goal_speed, sd[1], goal_d, time, next_x_vals, next_y_vals);  
   }
