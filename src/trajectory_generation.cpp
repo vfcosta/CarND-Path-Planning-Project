@@ -68,18 +68,33 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
      double pos_y2 = previous_path_y[path_size-2];
      angle = atan2(pos_y-pos_y2,pos_x-pos_x2);
   }
-  // TODO use spline to calculate frenet given x,y
-  auto freenet = getFrenet(pos_x, pos_y, angle, map_waypoints_x, map_waypoints_y);
-  int next_waypoint = NextWaypoint(pos_x, pos_y, angle, map_waypoints_x, map_waypoints_y);
-  double dist_inc = this->map_waypoints_s[next_waypoint] - freenet[0];
   cout << "speed: " << car_speed << " angle: " << angle << " path_size: " << path_size << endl;
   if (path_size < 50)
   {
-    double s = freenet[0];
-    double goal_s = s + dist_inc;
-    double d = freenet[1];
-    cout << "s: " << s << " d: " << d << " speed: " << car_speed << " angle: " << angle << endl;
+    // TODO use spline to calculate frenet given x,y
+    auto frenet = getFrenet(pos_x, pos_y, angle, map_waypoints_x, map_waypoints_y);
+    int next_waypoint = NextWaypoint(pos_x, pos_y, angle, map_waypoints_x, map_waypoints_y);
+    keepLaneTrajectory(frenet, next_waypoint, car_speed, next_x_vals, next_y_vals);
+  }
+  return {next_x_vals, next_y_vals};
+}
 
+void TrajectoryGeneration::keepLaneTrajectory(vector<double> frenet, int next_waypoint, double car_speed, vector<double> &next_x_vals, vector<double> &next_y_vals) {
+    double dist_inc = this->map_waypoints_s[next_waypoint] - frenet[0];
+    double s = frenet[0];
+    double goal_s = s + dist_inc;
+    double d = frenet[1];
+    cout << "current s: " << s << " goal s: " << goal_s << endl;
+    double goal_speed = 20.0;
+    double time = dist_inc/goal_speed;
+    jmtTrajectory(s, goal_s, car_speed, goal_speed, d, d, time, next_x_vals, next_y_vals);  
+}
+
+void TrajectoryGeneration::changeLaneTrajectory(vector<double> frenet, int next_waypoint, double car_speed, vector<double> &next_x_vals, vector<double> &next_y_vals) {
+    double dist_inc = this->map_waypoints_s[next_waypoint] - frenet[0];
+    double s = frenet[0];
+    double goal_s = s + dist_inc;
+    double d = frenet[1];
     // TODO: random change lane
     int lane_diff = (rand() % static_cast<int>(3)) - 1;
     double goal_d = max(2.0, min(d + lane_diff * this->lane_width, 10.0));
@@ -87,9 +102,7 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
     cout << "current s: " << s << " goal s: " << goal_s << endl;
     double goal_speed = 15.0;
     double time = dist_inc/goal_speed;
-    jmtTrajectory(s, goal_s, car_speed, goal_speed, d, goal_d, time, next_x_vals, next_y_vals);
-  }
-  return {next_x_vals, next_y_vals};
+    jmtTrajectory(s, goal_s, car_speed, goal_speed, d, goal_d, time, next_x_vals, next_y_vals);  
 }
 
 void TrajectoryGeneration::jmtTrajectory(double s, double goal_s, double car_speed, double goal_speed, double d, double goal_d, double time, vector<double> &next_x_vals, vector<double> &next_y_vals) {
