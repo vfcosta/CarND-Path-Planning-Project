@@ -61,33 +61,16 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
      car_s = previous_sd[0];
      car_d = previous_sd[1];
   }
-  // cout << "speed: " << car_speed << " angle: " << angle << " path_size: " << path_size << " goal_d: " << goal_d << endl;
-  if (path_size < 50)
-  {
-    vector<double> sd = {car_s, car_d};//frenet.fromXY(pos_x, pos_y, angle);
+  cout << "speed: " << car_speed << " angle: " << angle << " path_size: " << path_size << " goal_d: " << goal_d << endl;
+  if (path_size < 50) {
     auto nextSd = frenet.nextFromXY(pos_x, pos_y, angle);
-    double time = (nextSd[0] - sd[0])/goal_speed;
-    jmtTrajectory(sd[0], nextSd[0], car_speed, goal_speed, sd[1], goal_d, time, next_x_vals, next_y_vals);  
+    cout << "NEXT: " << nextSd[0] << "  " << nextSd[1] << endl;
+    // goal_speed = max(goal_speed - 8, min(goal_speed, car_speed + 8));
+    double time = (nextSd[0] - car_s)/goal_speed;
+    cout << "goal_speed: " << goal_speed << " time: " << time << endl;
+    jmtTrajectory(car_s, nextSd[0], car_speed, goal_speed, car_d, goal_d, time, next_x_vals, next_y_vals);
   }
   return {next_x_vals, next_y_vals};
-}
-
-void TrajectoryGeneration::keepLaneTrajectory(vector<double> sd, vector<double> nextSd, double car_speed, vector<double> &next_x_vals, vector<double> &next_y_vals) {
-    cout << "current s: " << sd[0] << " goal s: " << nextSd[0] << endl;
-    double goal_speed = 20.0;
-    double time = (nextSd[0] - sd[0])/goal_speed;
-    jmtTrajectory(sd[0], nextSd[0], car_speed, goal_speed, sd[1], sd[1], time, next_x_vals, next_y_vals);  
-}
-
-void TrajectoryGeneration::changeLaneTrajectory(vector<double> sd, vector<double> nextSd, double car_speed, vector<double> &next_x_vals, vector<double> &next_y_vals) {
-    // TODO: random change lane
-    int lane_diff = (rand() % static_cast<int>(3)) - 1;
-    double goal_d = max(2.0, min(sd[1] + lane_diff * this->lane_width, 10.0));
-
-    cout << "current s: " << sd[0] << " goal s: " << nextSd[0] << endl;
-    double goal_speed = 15.0;
-    double time = (nextSd[0] - sd[0])/goal_speed;
-    jmtTrajectory(sd[0], nextSd[0], car_speed, goal_speed, sd[1], goal_d, time, next_x_vals, next_y_vals);  
 }
 
 void TrajectoryGeneration::jmtTrajectory(double s, double goal_s, double car_speed, double goal_speed, double d, double goal_d, double time, vector<double> &next_x_vals, vector<double> &next_y_vals) {
@@ -95,6 +78,7 @@ void TrajectoryGeneration::jmtTrajectory(double s, double goal_s, double car_spe
     auto d_coeff = JMT({d, 0, 0}, {goal_d, 0, 0}, time);
     double delay = 0.02;
     double t = 0;
+    // cout << "d: " << d << " goal_d: " << goal_d << endl;
     while(t < time) {
       t += delay;
       // evaluate equation using JMT coefficients
@@ -103,7 +87,7 @@ void TrajectoryGeneration::jmtTrajectory(double s, double goal_s, double car_spe
         s_proj += s_coeff[k]*pow(t, k);
       }
       double d_proj = 0;
-      for(int k=0; k<s_coeff.size(); k++) {
+      for(int k=0; k<d_coeff.size(); k++) {
         d_proj += d_coeff[k]*pow(t, k);
       }
 

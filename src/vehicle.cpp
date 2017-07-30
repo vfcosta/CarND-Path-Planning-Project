@@ -237,6 +237,7 @@ int Vehicle::_max_accel_for_lane(vector<Vehicle> vehicles, int lane, int s) {
     }
   }
   
+  this->target_speed = max_speed;
   if(leading_index >= 0) {
     int next_pos = vehicles[leading_index].s;
     int my_next = s + this->v*1.5;
@@ -246,8 +247,6 @@ int Vehicle::_max_accel_for_lane(vector<Vehicle> vehicles, int lane, int s) {
     max_acc = min(max_acc, available_room);
     if (separation_next < preferred_buffer) {
       this->target_speed = vehicles[leading_index].v;
-    } else {
-      this->target_speed = max_speed;
     }
   }
   // cout << "max_acc: " << max_acc << endl;  
