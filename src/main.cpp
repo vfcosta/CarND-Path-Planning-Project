@@ -10,6 +10,7 @@
 #include "json.hpp"
 #include "trajectory_generation.hpp"
 #include "utils.hpp"
+#include "vehicle.hpp"
 
 using namespace std;
 
@@ -68,8 +69,12 @@ int main() {
   	map_waypoints_dy.push_back(d_y);
   }
 
-  TrajectoryGeneration trajectory_generation(map_waypoints_x, map_waypoints_y, map_waypoints_s, map_waypoints_dx, map_waypoints_dy);
-  h.onMessage([&trajectory_generation, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+  Frenet frenet;
+  frenet.setup(map_waypoints_x, map_waypoints_y, map_waypoints_s, map_waypoints_dx, map_waypoints_dy);
+  TrajectoryGeneration trajectory_generation(frenet);
+  Vehicle vehicle = Vehicle(frenet);
+
+  h.onMessage([&vehicle, &trajectory_generation, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -109,6 +114,7 @@ int main() {
 
           	json msgJson;
             auto next_vals = trajectory_generation.generate(car_x, car_y, car_s, car_d, car_yaw, car_speed, previous_path_x, previous_path_y);
+            vehicle.update_data(car_x, car_y, car_s, car_d, car_yaw, car_speed);
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
           	msgJson["next_x"] = next_vals[0];
           	msgJson["next_y"] = next_vals[1];
