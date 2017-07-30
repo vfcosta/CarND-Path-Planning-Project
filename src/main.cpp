@@ -12,6 +12,8 @@
 #include "utils.hpp"
 #include "vehicle.hpp"
 
+#define PLANNING_PERIOD_SECONDS 2
+
 using namespace std;
 
 // for convenience
@@ -73,8 +75,10 @@ int main() {
   frenet.setup(map_waypoints_x, map_waypoints_y, map_waypoints_s, map_waypoints_dx, map_waypoints_dy);
   TrajectoryGeneration trajectory_generation(frenet);
   Vehicle vehicle = Vehicle(frenet);
+  auto timestamp = std::chrono::steady_clock::now();
+  double acc_dt = 0;
 
-  h.onMessage([&vehicle, &trajectory_generation, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+  h.onMessage([&acc_dt, &timestamp, &vehicle, &trajectory_generation, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -111,10 +115,22 @@ int main() {
 
           	// Sensor Fusion Data, a list of all other cars on the same side of the road.
           	auto sensor_fusion = j[1]["sensor_fusion"];
-
+            auto new_timestamp = std::chrono::steady_clock::now();
+            double dt = std::chrono::duration_cast<std::chrono::microseconds>(new_timestamp - timestamp).count()/1e6;
+            acc_dt += dt;
+            // cout << j[1] << endl;
           	json msgJson;
-            auto next_vals = trajectory_generation.generate(car_x, car_y, car_s, car_d, car_yaw, car_speed, previous_path_x, previous_path_y);
-            vehicle.update_data(car_x, car_y, car_s, car_d, car_yaw, car_speed);
+            vehicle.update_data(car_x, car_y, car_s, car_d, car_yaw, car_speed, dt);
+            double goal_d = vehicle.lane * 4 + 2;
+            auto next_vals = trajectory_generation.generate(car_x, car_y, car_s, car_d, car_yaw, car_speed, goal_d, previous_path_x, previous_path_y);
+
+            if (acc_dt >= PLANNING_PERIOD_SECONDS) {
+              vehicle.update_state({});
+              vehicle.realize_state({});
+              acc_dt = 0;
+              cout << "LANE : " << vehicle.lane << ", a: " << vehicle.a << endl;
+            }
+
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
           	msgJson["next_x"] = next_vals[0];
           	msgJson["next_y"] = next_vals[1];
@@ -123,7 +139,7 @@ int main() {
 
           	//this_thread::sleep_for(chrono::milliseconds(1000));
           	ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-
+            timestamp = new_timestamp;
         }
       } else {
         // Manual driving

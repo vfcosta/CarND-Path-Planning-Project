@@ -33,23 +33,19 @@ public:
 
   int preferred_buffer = 6; // impacts "keep lane" behavior.
 
-  int lane;
+  int lane = -1;
 
-  int s;
+  double s;
 
-  int v;
+  double v;
 
-  int a;
+  double a;
 
   int target_speed;
 
   int lanes_available;
 
   int max_acceleration;
-
-  int goal_lane;
-
-  int goal_s;
 
   string state;
 
@@ -63,39 +59,36 @@ public:
   */
   virtual ~Vehicle();
 
-  void update_data(double car_x, double car_y, double car_s, double car_d, double car_yaw, double car_speed);
+  void update_data(double car_x, double car_y, double car_s, double car_d, double car_yaw, double car_speed, double dt);
 
-  void update_state(map<int, vector <vector<int> > > predictions);
-
-  void configure(vector<int> road_data);
+  void update_state(map<int, vector <vector<double> > > predictions);
 
   string display();
 
-  void increment(int dt);
+  void increment(double dt);
 
-  vector<int> state_at(int t);
+  vector<double> state_at(double t);
 
   bool collides_with(Vehicle other, int at_time);
 
   collider will_collide_with(Vehicle other, int timesteps);
 
-  void realize_state(map<int, vector < vector<int> > > predictions);
+  void realize_state(map<int, vector < vector<double> > > predictions);
 
   void realize_constant_speed();
 
-  int _max_accel_for_lane(map<int,vector<vector<int> > > predictions, int lane, int s);
+  int _max_accel_for_lane(map<int,vector<vector<double> > > predictions, int lane, int s);
 
-  void realize_keep_lane(map<int, vector< vector<int> > > predictions);
+  void realize_keep_lane(map<int, vector< vector<double> > > predictions);
 
-  void realize_lane_change(map<int,vector< vector<int> > > predictions, string direction);
+  void realize_lane_change(map<int,vector< vector<double> > > predictions, string direction);
 
-  void realize_prep_lane_change(map<int,vector< vector<int> > > predictions, string direction);
+  void realize_prep_lane_change(map<int,vector< vector<double> > > predictions, string direction);
 
-  vector<vector<int> > generate_predictions(int horizon);
+  vector<vector<double> > generate_predictions(int horizon);
 
   vector<string> get_possible_successor_states();
-  double safety_cost(vector < vector<int> > trajectory, map<int,vector < vector<int> > > predictions);
-  double goal_cost(vector < vector<int> > trajectory, map<int,vector < vector<int> > > predictions);
+  double safety_cost(vector < vector<double> > trajectory, map<int,vector < vector<double> > > predictions);
 };
 
 #endif

@@ -29,7 +29,7 @@ vector<double> TrajectoryGeneration::JMT(vector<double> start, vector<double> en
   return {alpha0, alpha1, alpha2, C.data()[0], C.data()[1], C.data()[2]};
 }
 
-vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y, double car_s, double car_d, double car_yaw, double car_speed, vector<double> previous_path_x, vector<double> previous_path_y) {
+vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y, double car_s, double car_d, double car_yaw, double car_speed, double goal_d, vector<double> previous_path_x, vector<double> previous_path_y) {
   vector<double> next_x_vals;
   vector<double> next_y_vals;
 
@@ -60,14 +60,17 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
      double pos_y2 = previous_path_y[path_size-2];
      angle = atan2(pos_y-pos_y2,pos_x-pos_x2);
   }
-  cout << "speed: " << car_speed << " angle: " << angle << " path_size: " << path_size << endl;
+  // cout << "speed: " << car_speed << " angle: " << angle << " path_size: " << path_size << " goal_d: " << goal_d << endl;
   if (path_size < 50)
   {
     // TODO use spline to calculate frenet given x,y
     auto sd = frenet.fromXY(pos_x, pos_y, angle);
     auto nextSd = frenet.nextFromXY(pos_x, pos_y, angle);
     // keepLaneTrajectory(sd, nextSd, car_speed, next_x_vals, next_y_vals);
-    changeLaneTrajectory(sd, nextSd, car_speed, next_x_vals, next_y_vals);
+    // changeLaneTrajectory(sd, nextSd, car_speed, next_x_vals, next_y_vals);
+    double goal_speed = 20.0;
+    double time = (nextSd[0] - sd[0])/goal_speed;
+    jmtTrajectory(sd[0], nextSd[0], car_speed, goal_speed, sd[1], goal_d, time, next_x_vals, next_y_vals);  
   }
   return {next_x_vals, next_y_vals};
 }
@@ -109,7 +112,7 @@ void TrajectoryGeneration::jmtTrajectory(double s, double goal_s, double car_spe
 
       // transform from frenet to XY using fitted spline
       auto xy = frenet.fromFrenet(s_proj, d_proj);
-      cout << "JMT s: " << s_proj << " d: " << d_proj << endl;
+      // cout << "JMT s: " << s_proj << " d: " << d_proj << endl;
       // cout << "s_coeff: " << s_coeff[0] << ", " << s_coeff[1] << ", " << s_coeff[2] << ", " << s_coeff[3] << ", " << s_coeff[4] << ", " << s_coeff[5] << endl;
       // cout << "x: " << x << " y: " << y << endl;
       next_x_vals.push_back(xy[0]);
