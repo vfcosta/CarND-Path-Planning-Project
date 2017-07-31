@@ -66,7 +66,18 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
     auto nextSd = frenet.nextFromXY(pos_x, pos_y, angle);
     cout << "NEXT: " << nextSd[0] << "  " << nextSd[1] << endl;
     // goal_speed = max(goal_speed - 8, min(goal_speed, car_speed + 8));
-    double time = (nextSd[0] - car_s)/goal_speed;
+    // double time = (nextSd[0] - car_s)/goal_speed + (goal_speed - car_speed)/10.0;
+    // double time = sqrt(2*(nextSd[0] - car_s)/10.0);
+
+    double dx = nextSd[0] - car_s;
+    double dv = goal_speed - car_speed;
+
+    // dx = vi*t + 0.5*a*t*t;
+    // dx = vi*t + 0.5*dv*t;
+    // dx = t*(vi + 0.5*dv);
+    // t = dx/(vi + 0.5*dv);
+    double time = dx/(car_speed + 0.5*dv);
+
     cout << "goal_speed: " << goal_speed << " time: " << time << endl;
     jmtTrajectory(car_s, nextSd[0], car_speed, goal_speed, car_d, goal_d, time, next_x_vals, next_y_vals);
   }
