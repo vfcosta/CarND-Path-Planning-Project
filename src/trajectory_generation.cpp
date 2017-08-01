@@ -56,15 +56,16 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
      double pos_x2 = previous_path_x[path_size-2];
      double pos_y2 = previous_path_y[path_size-2];
      angle = atan2(pos_y-pos_y2,pos_x-pos_x2);
+     car_speed = sqrt(pow(pos_y-pos_y2,2) + pow(pos_x-pos_x2,2))/0.02;
 
      auto previous_sd = frenet.fromXY(pos_x, pos_y, angle);
      car_s = previous_sd[0];
      car_d = previous_sd[1];
   }
-  cout << "speed: " << car_speed << " angle: " << angle << " path_size: " << path_size << " goal_d: " << goal_d << endl;
+  // cout << "speed: " << car_speed << " angle: " << angle << " path_size: " << path_size << " goal_d: " << goal_d << endl;
   if (path_size < 50) {
     auto nextSd = frenet.nextFromXY(pos_x, pos_y, angle);
-    cout << "NEXT: " << nextSd[0] << "  " << nextSd[1] << endl;
+    cout << "NEXT: " << nextSd[0] << "  " << nextSd[1] << " S " << car_s << endl;
     // goal_speed = max(goal_speed - 8, min(goal_speed, car_speed + 8));
     // double time = (nextSd[0] - car_s)/goal_speed + (goal_speed - car_speed)/10.0;
     // double time = sqrt(2*(nextSd[0] - car_s)/10.0);
@@ -78,7 +79,7 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
     // t = dx/(vi + 0.5*dv);
     double time = dx/(car_speed + 0.5*dv);
 
-    cout << "goal_speed: " << goal_speed << " time: " << time << endl;
+    cout << "speed: " << car_speed << " goal_speed: " << goal_speed << " time: " << time << endl;
     jmtTrajectory(car_s, nextSd[0], car_speed, goal_speed, car_d, goal_d, time, next_x_vals, next_y_vals);
   }
   return {next_x_vals, next_y_vals};
