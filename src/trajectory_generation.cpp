@@ -70,17 +70,25 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
     // double time = (nextSd[0] - car_s)/goal_speed + (goal_speed - car_speed)/10.0;
     // double time = sqrt(2*(nextSd[0] - car_s)/10.0);
 
-    double dx = nextSd[0] - car_s;
+    goal_speed = min(goal_speed, car_speed + 10); // limit goal_speed
+    // double dx = nextSd[0] - car_s;
     double dv = goal_speed - car_speed;
+
+    // 0.5*a*t*t + vi*t - dx = 0;
+    // 5*t*t + vi*t - dx = 0;
+    // double t2 = (-car_speed + sqrt(car_speed*car_speed + 20*dx))/10.0;
+    // cout << "T2: " << t2 << endl;
 
     // dx = vi*t + 0.5*a*t*t;
     // dx = vi*t + 0.5*dv*t;
     // dx = t*(vi + 0.5*dv);
     // t = dx/(vi + 0.5*dv);
-    double time = dx/(car_speed + 0.5*dv);
+    double time = 1;//dx/(car_speed + 0.5*dv);
+    double dist = car_speed + dv/2.0;
+    cout << "dist " << dist << endl;
 
     cout << "speed: " << car_speed << " goal_speed: " << goal_speed << " time: " << time << endl;
-    jmtTrajectory(car_s, nextSd[0], car_speed, goal_speed, car_d, goal_d, time, next_x_vals, next_y_vals);
+    jmtTrajectory(car_s, car_s + dist, car_speed, goal_speed, car_d, goal_d, time, next_x_vals, next_y_vals);
   }
   return {next_x_vals, next_y_vals};
 }
