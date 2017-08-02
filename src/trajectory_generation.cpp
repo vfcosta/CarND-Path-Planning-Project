@@ -72,8 +72,8 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
     goal_speed = max(car_speed - 5/time, min(goal_speed, car_speed + 5/time)); // limit goal_speed
     double dv = goal_speed - car_speed;
     double dist_s = car_speed*time + dv*time*0.5;
-    cout << "car_s: " << car_s << " dist_s " << dist_s << endl;
-    cout << "speed: " << car_speed << " goal_speed: " << goal_speed << " time: " << time << endl;
+    // cout << "car_s: " << car_s << " dist_s " << dist_s << endl;
+    // cout << "speed: " << car_speed << " goal_speed: " << goal_speed << " time: " << time << endl;
     jmtTrajectory(car_s, car_s + dist_s, car_speed, goal_speed, car_d, goal_d, time, next_x_vals, next_y_vals);
   }
   return {next_x_vals, next_y_vals};
@@ -84,7 +84,7 @@ void TrajectoryGeneration::jmtTrajectory(double s, double goal_s, double car_spe
   auto s_coeff = solution[0];
   auto d_coeff = solution[1];
   double t = 0;
-  cout << "time: " << time << " d: " << d << " goal_d: " << goal_d << endl;
+  // cout << "time: " << time << " d: " << d << " goal_d: " << goal_d << endl;
   while(t < time - delay) {
     t += delay;
     // evaluate equation using JMT coefficients
@@ -122,7 +122,7 @@ vector<vector<double>> TrajectoryGeneration::selectBest(double s, double goal_s,
     }
   }
   time = min_time;
-  cout << ">>>>>>>> SELECTED TIME " << time << endl;
+  // cout << ">>>>>>>> SELECTED TIME " << time << endl;
   return {min_s_coeff, min_d_coeff};
 }
 
@@ -130,7 +130,7 @@ double TrajectoryGeneration::trajectoryCost(vector<double> s_coeff, vector<doubl
   double value = 0;
   value += 1*maxAccelCost(s_coeff, d_coeff, t);
   value += 1*maxSpeedCost(s_coeff, d_coeff, t);
-  cout << "VALUE " << value << " T " << t << endl;
+  // cout << "VALUE " << value << " T " << t << endl;
   return value;
 }
 
@@ -161,7 +161,7 @@ double TrajectoryGeneration::maxAccelCost(vector<double> s_coeff, vector<double>
   while(ti < t - delay) {
   // for (int i=0; i<100; i++) {
     double accel = fabs(evaluate_coefficients(s_d_dot, ti)) + fabs(evaluate_coefficients(d_d_dot, ti));
-    cout << "MAX " << accel << " " << ti << endl;
+    // cout << "MAX " << accel << " " << ti << endl;
     if (accel > 10) {
       return 1;
     }

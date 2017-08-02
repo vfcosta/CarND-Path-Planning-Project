@@ -94,7 +94,7 @@ void Vehicle::update_state(vector<Vehicle> vehicles) {
             min_state = possible_state;
         }
     }
-    cout << "> SELECTED STATE: " << min_state << endl;
+    cout << ">>>>>>>> SELECTED STATE: " << min_state << endl;
     state = min_state;
 }
 
@@ -109,9 +109,10 @@ double Vehicle::speed_cost(vector<Vehicle> vehicles) {
 }
 
 double Vehicle::safety_cost(vector < vector<double> > trajectory, vector<Vehicle> vehicles) {
+  if (state.compare("KL") == 0) return 0; // consider that collision will always be avoided when state is KL
   double cost = 0;
   for (auto& vehicle : vehicles) {
-      auto collider = will_collide_with(vehicle, 10);
+      auto collider = will_collide_with(vehicle, 20);
       if (collider.collision) {
         cout << "HIT: " << state << "**********************************************************" << endl;
         cout << "C1] " << " lane: " << this->lane << " s: " << this->s << endl;
@@ -175,8 +176,8 @@ Vehicle::collider Vehicle::will_collide_with(Vehicle other, int timesteps) {
 	Vehicle::collider collider_temp;
 	collider_temp.collision = false;
 	collider_temp.time = -1; 
-	for (int t = 0; t < timesteps+1; t++) {
-    if( collides_with(other, t) ) {
+	for (int t = 0; t < timesteps; t++) {
+    if( collides_with(other, t*0.1) ) {
 			collider_temp.collision = true;
 			collider_temp.time = t; 
       return collider_temp;
@@ -242,11 +243,20 @@ int Vehicle::_max_accel_for_lane(vector<Vehicle> vehicles, int lane, int s) {
     int next_pos = vehicles[leading_index].s;
     int my_next = s + this->v*1.5;
     int separation_next = next_pos - my_next;
+    cout << "next_pos: " << next_pos << " my_next: " << my_next << endl;
     // cout << lane << " separation: " << separation_next << " v: " << vehicles[leading_index].v << endl;
     int available_room = separation_next - preferred_buffer;
-    max_acc = min(max_acc, available_room);
     if (separation_next < preferred_buffer) {
+      cout << "KEEP DISTANCE" << endl;
       this->target_speed = vehicles[leading_index].v;
+      if (separation_next < preferred_buffer/2) {
+        cout << "INCREASE DISTANCE" << endl;
+        this->target_speed *= 0.9;
+      }
+      // reduce speed to increase separation
+      // cout << "TARGET SPEED1 " << target_speed << endl;
+      // this->target_speed *= min(1.0, (preferred_buffer - separation_next)/(double)preferred_buffer);
+      cout << "TARGET SPEED " << target_speed << " " << separation_next << endl;
     }
   }
   // cout << "max_acc: " << max_acc << endl;  
@@ -286,26 +296,13 @@ void Vehicle::realize_prep_lane_change(vector<Vehicle> vehicles, string directio
     int target_vel = vehicles[nearest_behind_index].vx;
     int delta_v = this->v - target_vel;
     int delta_s = this->s - vehicles[nearest_behind_index].s;
-    if(delta_v != 0) {
-      int time = -2 * delta_s/delta_v;
-      int a;
-      if (time == 0) {
-        a = this->a;
-      } else {
-        a = delta_v/time;
-      }
-      if(a > this->max_acceleration) {
-        a = this->max_acceleration;
-      }
-      if(a < -this->max_acceleration) {
-        a = -this->max_acceleration;
-      }
-      this->a = a;
-    }
-    else {
-      int my_min_acc = max(-this->max_acceleration,-delta_s);
-      this->a = my_min_acc;
-    }
+    target_speed = min(max_speed, target_vel * 1.1);
+    // if(delta_v != 0) {
+    // }
+    // else {
+    //   int my_min_acc = max(-this->max_acceleration,-delta_s);
+    //   this->a = my_min_acc;
+    // }
   }
 }
 
