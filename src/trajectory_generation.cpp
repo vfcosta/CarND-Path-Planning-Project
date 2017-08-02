@@ -14,7 +14,7 @@ vector<double> TrajectoryGeneration::JMT(vector<double> start, vector<double> en
   double alpha0 = start[0];
   double alpha1 = start[1];
   double alpha2 = start[2]/2.0;
-    
+
   MatrixXd A(3,3);
   A << pow(T, 3),   pow(T, 4),    pow(T, 5),
         3*pow(T, 2), 4*pow(T, 3),  5*pow(T, 4),
@@ -59,10 +59,12 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
      double pos_x2 = previous_path_x[path_size-2];
      double pos_y2 = previous_path_y[path_size-2];
      angle = atan2(pos_y-pos_y2,pos_x-pos_x2);
-     car_speed = distance(pos_x, pos_y, pos_x2, pos_y2)/delay;
 
      car_s = previous_path_s[path_size-1];
      car_d = previous_path_d[path_size-1];
+     double car_s2 = previous_path_s[path_size-2];
+     double car_d2 = previous_path_d[path_size-2];
+     car_speed = distance(car_s2, car_d, car_s, car_d2)/delay;
   }
   // cout << "speed: " << car_speed << " angle: " << angle << " path_size: " << path_size << " goal_d: " << goal_d << endl;
   if (path_size < 100) {
@@ -82,7 +84,7 @@ void TrajectoryGeneration::jmtTrajectory(double s, double goal_s, double car_spe
   auto s_coeff = solution[0];
   auto d_coeff = solution[1];
   double t = 0;
-  // cout << "time: " << time << " d: " << d << " goal_d: " << goal_d << endl;
+  cout << "time: " << time << " d: " << d << " goal_d: " << goal_d << endl;
   while(t < time - delay) {
     t += delay;
     // evaluate equation using JMT coefficients
@@ -106,10 +108,9 @@ vector<vector<double>> TrajectoryGeneration::selectBest(double s, double goal_s,
   double min_cost = 9999;
   vector<double> min_s_coeff;
   vector<double> min_d_coeff;
-
+  double min_time = time;
   for (int i=0; i<10; i++) {
     double t = time + (i-1)*timestep;
-    cout << " t : " << t << endl;
     auto s_coeff = JMT({s, car_speed, 0}, {goal_s, goal_speed, 0}, t);
     auto d_coeff = JMT({d, 0, 0}, {goal_d, 0, 0}, t);
     double cost = trajectoryCost(s_coeff, d_coeff, t);
@@ -117,28 +118,50 @@ vector<vector<double>> TrajectoryGeneration::selectBest(double s, double goal_s,
       min_cost = cost;
       min_s_coeff = s_coeff;
       min_d_coeff = d_coeff;
-      time = t;
+      min_time = t;
     }
   }
-  cout << "SELECTED TIME " << time << endl;
+  time = min_time;
+  cout << ">>>>>>>> SELECTED TIME " << time << endl;
   return {min_s_coeff, min_d_coeff};
 }
 
 double TrajectoryGeneration::trajectoryCost(vector<double> s_coeff, vector<double> d_coeff, double t) {
   double value = 0;
-  value += 1*totalAccelCost(s_coeff, d_coeff, t);
-  cout << "VALUE " << value << endl;
+  value += 1*maxAccelCost(s_coeff, d_coeff, t);
+  value += 1*maxSpeedCost(s_coeff, d_coeff, t);
+  cout << "VALUE " << value << " T " << t << endl;
   return value;
 }
 
-double TrajectoryGeneration::totalAccelCost(vector<double> s_coeff, vector<double> d_coeff, double t) {
+double TrajectoryGeneration::maxSpeedCost(vector<double> s_coeff, vector<double> d_coeff, double t) {
   auto s_dot = differentiate(s_coeff);
-  auto s_d_dot = differentiate(s_dot);
+  auto d_dot = differentiate(d_coeff);
   double max = 0;
   double ti = 0;
+  double dt = t/100.0;
   while(ti < t - delay) {
-    double accel = fabs(evaluate_coefficients(s_d_dot, ti));
-    cout << "MAX " << accel << endl;
+  // for (int i=0; i<100; i++) {
+    double speed = fabs(evaluate_coefficients(s_dot, ti)) + fabs(evaluate_coefficients(d_dot, ti));
+    // cout << "MAX " << speed << " " << ti << endl;
+    if (speed > 22) {
+      return 1;
+    }
+    ti += delay;
+  }
+  return 0;
+}
+
+double TrajectoryGeneration::maxAccelCost(vector<double> s_coeff, vector<double> d_coeff, double t) {
+  auto s_d_dot = differentiate(differentiate(s_coeff));
+  auto d_d_dot = differentiate(differentiate(d_coeff));
+  double max = 0;
+  double ti = 0;
+  double dt = t/100.0;
+  while(ti < t - delay) {
+  // for (int i=0; i<100; i++) {
+    double accel = fabs(evaluate_coefficients(s_d_dot, ti)) + fabs(evaluate_coefficients(d_d_dot, ti));
+    cout << "MAX " << accel << " " << ti << endl;
     if (accel > 10) {
       return 1;
     }

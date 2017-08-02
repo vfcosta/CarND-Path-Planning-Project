@@ -19,6 +19,7 @@ private:
   vector<double> previous_path_s;
   vector<double> previous_path_d;
 
-  double totalAccelCost(vector<double> s_coeff, vector<double> d_coeff, double t);
+  double maxAccelCost(vector<double> s_coeff, vector<double> d_coeff, double t);
+  double maxSpeedCost(vector<double> s_coeff, vector<double> d_coeff, double t);
   vector<vector<double>> selectBest(double s, double goal_s, double car_speed, double goal_speed, double d, double goal_d, double &time);
 };

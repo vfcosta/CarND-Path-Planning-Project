@@ -18,6 +18,14 @@ void Frenet::setup(vector<double> map_waypoints_x, vector<double> map_waypoints_
   this->map_waypoints_dx = map_waypoints_dx;
   this->map_waypoints_dy = map_waypoints_dy;
   this->max_s = this->map_waypoints_s[this->map_waypoints_s.size()-1];
+
+  // map_waypoints_s.push_back(this->max_s + map_waypoints_s[0]);
+  // map_waypoints_s.push_back(this->max_s + map_waypoints_s[1]);
+  // map_waypoints_x.push_back(map_waypoints_x[map_waypoints_x.size()-1] + map_waypoints_x[0]);
+  // map_waypoints_x.push_back(map_waypoints_x[map_waypoints_x.size()-1] + map_waypoints_x[1]);
+  // map_waypoints_y.push_back(map_waypoints_y[map_waypoints_y.size()-1] + map_waypoints_y[0]);
+  // map_waypoints_y.push_back(map_waypoints_y[map_waypoints_y.size()-1] + map_waypoints_y[1]);
+
   spline_waypoints_x.set_points(map_waypoints_s, map_waypoints_x);
   spline_waypoints_y.set_points(map_waypoints_s, map_waypoints_y);
   spline_waypoints_dx.set_points(map_waypoints_s, map_waypoints_dx);
