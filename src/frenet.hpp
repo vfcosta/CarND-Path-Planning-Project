@@ -16,6 +16,7 @@ public:
   vector<double> nextFromXY(double x, double y, double angle);
 
 private:
+  double max_s;
   vector<double> map_waypoints_x;
   vector<double> map_waypoints_y;
   vector<double> map_waypoints_s;

@@ -17,6 +17,7 @@ void Frenet::setup(vector<double> map_waypoints_x, vector<double> map_waypoints_
   this->map_waypoints_s = map_waypoints_s;
   this->map_waypoints_dx = map_waypoints_dx;
   this->map_waypoints_dy = map_waypoints_dy;
+  this->max_s = this->map_waypoints_s[this->map_waypoints_s.size()-1];
   spline_waypoints_x.set_points(map_waypoints_s, map_waypoints_x);
   spline_waypoints_y.set_points(map_waypoints_s, map_waypoints_y);
   spline_waypoints_dx.set_points(map_waypoints_s, map_waypoints_dx);
@@ -28,9 +29,10 @@ vector<double> Frenet::fromXY(double x, double y, double angle) {
 }
 
 vector<double> Frenet::fromFrenet(double s, double d) {
-    double x = spline_waypoints_x(s) + spline_waypoints_dx(s)*d;
-    double y = spline_waypoints_y(s) + spline_waypoints_dy(s)*d;
-    return {x, y};
+  s = fmod(s, max_s); // adjust s to handle multiple laps
+  double x = spline_waypoints_x(s) + spline_waypoints_dx(s)*d;
+  double y = spline_waypoints_y(s) + spline_waypoints_dy(s)*d;
+  return {x, y};
 }
 
 vector<double> Frenet::nextFromXY(double x, double y, double angle) {

@@ -12,6 +12,7 @@ public:
   void jmtTrajectory(double s, double goal_s, double car_speed, double goal_speed, double d, double goal_d, double time, vector<double> &next_x_vals, vector<double> &next_y_vals);
 
 private:
+  double delay = 0.02;
   double lane_width = 4;
   Frenet frenet;
   vector<double> previous_path_s;

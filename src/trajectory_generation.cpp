@@ -37,7 +37,6 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
   double pos_y;
   double angle;
   int path_size = previous_path_x.size();
-  // if (path_size > 10) path_size = 10;
 
   int size_consumed = previous_path_s.size() - previous_path_x.size();
   previous_path_s = vector<double>(previous_path_s.begin()+size_consumed, previous_path_s.end());
@@ -60,18 +59,18 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
      double pos_x2 = previous_path_x[path_size-2];
      double pos_y2 = previous_path_y[path_size-2];
      angle = atan2(pos_y-pos_y2,pos_x-pos_x2);
-     car_speed = sqrt(pow(pos_y-pos_y2,2) + pow(pos_x-pos_x2,2))/0.02;
+     car_speed = sqrt(pow(pos_y-pos_y2,2) + pow(pos_x-pos_x2,2))/delay;
 
      car_s = previous_path_s[path_size-1];
      car_d = previous_path_d[path_size-1];
   }
   // cout << "speed: " << car_speed << " angle: " << angle << " path_size: " << path_size << " goal_d: " << goal_d << endl;
   if (path_size < 100) {
-    goal_speed = max(car_speed - 5, min(goal_speed, car_speed + 5)); // limit goal_speed
+    double time = 1 + fabs(goal_d - car_d)/lane_width;
+    goal_speed = max(car_speed - 5/time, min(goal_speed, car_speed + 5/time)); // limit goal_speed
     double dv = goal_speed - car_speed;
-    double time = 2;
-    double dist_s = car_speed*time + dv*time/2.0;
-    cout << "dist_s " << dist_s << endl;
+    double dist_s = car_speed*time + dv*time*0.5;
+    cout << "car_s: " << car_s << " dist_s " << dist_s << endl;
     cout << "speed: " << car_speed << " goal_speed: " << goal_speed << " time: " << time << endl;
     jmtTrajectory(car_s, car_s + dist_s, car_speed, goal_speed, car_d, goal_d, time, next_x_vals, next_y_vals);
   }
@@ -81,10 +80,9 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
 void TrajectoryGeneration::jmtTrajectory(double s, double goal_s, double car_speed, double goal_speed, double d, double goal_d, double time, vector<double> &next_x_vals, vector<double> &next_y_vals) {
     auto s_coeff = JMT({s, car_speed, 0}, {goal_s, goal_speed, 0}, time);
     auto d_coeff = JMT({d, 0, 0}, {goal_d, 0, 0}, time);
-    double delay = 0.02;
     double t = 0;
     // cout << "d: " << d << " goal_d: " << goal_d << endl;
-    while(t < time) {
+    while(t < time - delay) {
       t += delay;
       // evaluate equation using JMT coefficients
       double s_proj = 0;
