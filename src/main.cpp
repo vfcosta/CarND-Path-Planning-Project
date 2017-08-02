@@ -105,7 +105,9 @@ int main() {
           	double car_yaw = j[1]["yaw"];
           	double car_speed = j[1]["speed"];
             car_speed *= 0.44704; // convert to km/h
-
+            if(car_speed>22.35) {
+              cout << "************** SPEEEEEED violated: " << car_speed << endl;
+            }
           	// Previous path data given to the Planner
           	auto previous_path_x = j[1]["previous_path_x"];
           	auto previous_path_y = j[1]["previous_path_y"];

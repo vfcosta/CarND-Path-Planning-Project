@@ -14,4 +14,6 @@ public:
 private:
   double lane_width = 4;
   Frenet frenet;
+  vector<double> previous_path_s;
+  vector<double> previous_path_d;
 };
