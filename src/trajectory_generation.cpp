@@ -59,7 +59,7 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
      double pos_x2 = previous_path_x[path_size-2];
      double pos_y2 = previous_path_y[path_size-2];
      angle = atan2(pos_y-pos_y2,pos_x-pos_x2);
-     car_speed = sqrt(pow(pos_y-pos_y2,2) + pow(pos_x-pos_x2,2))/delay;
+     car_speed = distance(pos_x, pos_y, pos_x2, pos_y2)/delay;
 
      car_s = previous_path_s[path_size-1];
      car_d = previous_path_d[path_size-1];
@@ -78,30 +78,71 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
 }
 
 void TrajectoryGeneration::jmtTrajectory(double s, double goal_s, double car_speed, double goal_speed, double d, double goal_d, double time, vector<double> &next_x_vals, vector<double> &next_y_vals) {
-    auto s_coeff = JMT({s, car_speed, 0}, {goal_s, goal_speed, 0}, time);
-    auto d_coeff = JMT({d, 0, 0}, {goal_d, 0, 0}, time);
-    double t = 0;
-    // cout << "d: " << d << " goal_d: " << goal_d << endl;
-    while(t < time - delay) {
-      t += delay;
-      // evaluate equation using JMT coefficients
-      double s_proj = 0;
-      for(int k=0; k<s_coeff.size(); k++) {
-        s_proj += s_coeff[k]*pow(t, k);
-      }
-      double d_proj = 0;
-      for(int k=0; k<d_coeff.size(); k++) {
-        d_proj += d_coeff[k]*pow(t, k);
-      }
+  auto solution = selectBest(s, goal_s, car_speed, goal_speed, d, goal_d, time);
+  auto s_coeff = solution[0];
+  auto d_coeff = solution[1];
+  double t = 0;
+  // cout << "time: " << time << " d: " << d << " goal_d: " << goal_d << endl;
+  while(t < time - delay) {
+    t += delay;
+    // evaluate equation using JMT coefficients
+    double s_proj = evaluate_coefficients(s_coeff, t);
+    double d_proj = evaluate_coefficients(d_coeff, t);
 
-      // transform from frenet to XY using fitted spline
-      auto xy = frenet.fromFrenet(s_proj, d_proj);
-      // cout << "JMT s: " << s_proj << " d: " << d_proj << endl;
-      // cout << "s_coeff: " << s_coeff[0] << ", " << s_coeff[1] << ", " << s_coeff[2] << ", " << s_coeff[3] << ", " << s_coeff[4] << ", " << s_coeff[5] << endl;
-      // cout << "x: " << x << " y: " << y << endl;
-      next_x_vals.push_back(xy[0]);
-      next_y_vals.push_back(xy[1]);
-      previous_path_s.push_back(s_proj);
-      previous_path_d.push_back(d_proj);
+    // transform from frenet to XY using fitted spline
+    auto xy = frenet.fromFrenet(s_proj, d_proj);
+    // cout << "JMT s: " << s_proj << " d: " << d_proj << endl;
+    // cout << "s_coeff: " << s_coeff[0] << ", " << s_coeff[1] << ", " << s_coeff[2] << ", " << s_coeff[3] << ", " << s_coeff[4] << ", " << s_coeff[5] << endl;
+    // cout << "x: " << x << " y: " << y << endl;
+    next_x_vals.push_back(xy[0]);
+    next_y_vals.push_back(xy[1]);
+    previous_path_s.push_back(s_proj);
+    previous_path_d.push_back(d_proj);
+  }
+}
+
+vector<vector<double>> TrajectoryGeneration::selectBest(double s, double goal_s, double car_speed, double goal_speed, double d, double goal_d, double &time) {
+  double timestep = 0.5;
+  double min_cost = 9999;
+  vector<double> min_s_coeff;
+  vector<double> min_d_coeff;
+
+  for (int i=0; i<10; i++) {
+    double t = time + (i-1)*timestep;
+    cout << " t : " << t << endl;
+    auto s_coeff = JMT({s, car_speed, 0}, {goal_s, goal_speed, 0}, t);
+    auto d_coeff = JMT({d, 0, 0}, {goal_d, 0, 0}, t);
+    double cost = trajectoryCost(s_coeff, d_coeff, t);
+    if (cost < min_cost) {
+      min_cost = cost;
+      min_s_coeff = s_coeff;
+      min_d_coeff = d_coeff;
+      time = t;
     }
+  }
+  cout << "SELECTED TIME " << time << endl;
+  return {min_s_coeff, min_d_coeff};
+}
+
+double TrajectoryGeneration::trajectoryCost(vector<double> s_coeff, vector<double> d_coeff, double t) {
+  double value = 0;
+  value += 1*totalAccelCost(s_coeff, d_coeff, t);
+  cout << "VALUE " << value << endl;
+  return value;
+}
+
+double TrajectoryGeneration::totalAccelCost(vector<double> s_coeff, vector<double> d_coeff, double t) {
+  auto s_dot = differentiate(s_coeff);
+  auto s_d_dot = differentiate(s_dot);
+  double max = 0;
+  double ti = 0;
+  while(ti < t - delay) {
+    double accel = fabs(evaluate_coefficients(s_d_dot, ti));
+    cout << "MAX " << accel << endl;
+    if (accel > 10) {
+      return 1;
+    }
+    ti += delay;
+  }
+  return 0;
 }
