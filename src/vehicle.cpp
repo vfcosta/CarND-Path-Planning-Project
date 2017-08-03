@@ -112,7 +112,7 @@ double Vehicle::safety_cost(vector < vector<double> > trajectory, vector<Vehicle
   if (state.compare("KL") == 0) return 0; // consider that collision will always be avoided when state is KL
   double cost = 0;
   for (auto& vehicle : vehicles) {
-      auto collider = will_collide_with(vehicle, 20);
+      auto collider = will_collide_with(vehicle, 30);
       if (collider.collision) {
         cout << "HIT: " << state << "**********************************************************" << endl;
         cout << "C1] " << " lane: " << this->lane << " s: " << this->s << endl;
@@ -293,10 +293,13 @@ void Vehicle::realize_prep_lane_change(vector<Vehicle> vehicles, string directio
     }
   }
   if(nearest_behind_index >= 0) {
-    int target_vel = vehicles[nearest_behind_index].vx;
+    int target_vel = vehicles[nearest_behind_index].v;
     int delta_v = this->v - target_vel;
     int delta_s = this->s - vehicles[nearest_behind_index].s;
-    target_speed = min(max_speed, target_vel * 1.1);
+    if (target_speed < target_vel) {
+      target_speed = min(max_speed, target_vel * 1.1);
+    }
+    _max_accel_for_lane(vehicles, this->lane, this->s);
     // if(delta_v != 0) {
     // }
     // else {

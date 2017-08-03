@@ -37,6 +37,7 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
   double pos_y;
   double angle;
   int path_size = previous_path_x.size();
+  if (path_size > 80 && fabs(car_d - goal_d)/lane_width < 0.2) path_size = 80;
 
   int size_consumed = previous_path_s.size() - previous_path_x.size();
   previous_path_s = vector<double>(previous_path_s.begin()+size_consumed, previous_path_s.end());
