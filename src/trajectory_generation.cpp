@@ -37,7 +37,7 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
   double pos_y;
   double angle;
   int path_size = previous_path_x.size();
-  if (path_size > 80 && fabs(car_d - goal_d)/lane_width < 0.2) path_size = 80;
+  path_size = min(10, path_size);
 
   int size_consumed = previous_path_s.size() - previous_path_x.size();
   previous_path_s = vector<double>(previous_path_s.begin()+size_consumed, previous_path_s.begin()+size_consumed+path_size);
@@ -50,6 +50,9 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
   }
   // take cached vals into account when get current vehicle position
   double curvature_correction = 1;
+  double car_speed_d = 0;
+  double accel_d = 0;
+  double accel = 0;
   if(path_size == 0) {
      pos_x = car_x;
      pos_y = car_y;
@@ -66,7 +69,15 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
      car_d = previous_path_d[path_size-1];
      double car_s2 = previous_path_s[path_size-2];
      double car_d2 = previous_path_d[path_size-2];
-     car_speed = distance(car_s, car_d, car_s2, car_d2)/delay;
+     double car_s3 = previous_path_s[path_size-3];
+     double car_d3 = previous_path_d[path_size-3];
+    //  car_speed = distance(car_s, car_d, car_s2, car_d2)/delay;
+     car_speed = distance(car_s, 0, car_s2, 0)/delay;
+     car_speed_d = (car_d - car_d2)/delay;
+     double car_speed_d2 = (car_d2 - car_d3)/delay;
+     accel_d = (car_speed_d - car_speed_d2)/delay;
+     double car_speed2 = (car_s2 - car_s3)/delay;
+     accel = (car_speed - car_speed2)/delay;
 
      curvature_correction = 0;
      for (int i = 1; i<path_size; i++) {
@@ -86,13 +97,13 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
     double dist_s = car_speed*time + dv*time*0.5;
     // cout << "car_s: " << car_s << " dist_s " << dist_s << endl;
     // cout << "speed: " << car_speed << " goal_speed: " << goal_speed << " time: " << time << endl;
-    jmtTrajectory(car_s, car_s + dist_s, car_speed, goal_speed, car_d, goal_d, time, next_x_vals, next_y_vals);
+    jmtTrajectory(car_s, car_s + dist_s, car_speed, goal_speed, accel, car_d, goal_d, car_speed_d, accel_d, time, next_x_vals, next_y_vals);
   }
   return {next_x_vals, next_y_vals};
 }
 
-void TrajectoryGeneration::jmtTrajectory(double s, double goal_s, double car_speed, double goal_speed, double d, double goal_d, double time, vector<double> &next_x_vals, vector<double> &next_y_vals) {
-  auto solution = selectBest(s, goal_s, car_speed, goal_speed, d, goal_d, time);
+void TrajectoryGeneration::jmtTrajectory(double s, double goal_s, double car_speed, double goal_speed, double accel, double d, double goal_d, double car_speed_d, double accel_d, double time, vector<double> &next_x_vals, vector<double> &next_y_vals) {
+  auto solution = selectBest(s, goal_s, car_speed, goal_speed, accel, d, goal_d, car_speed_d, accel_d, time);
   auto s_coeff = solution[0];
   auto d_coeff = solution[1];
   double t = 0;
@@ -115,7 +126,7 @@ void TrajectoryGeneration::jmtTrajectory(double s, double goal_s, double car_spe
   }
 }
 
-vector<vector<double>> TrajectoryGeneration::selectBest(double s, double goal_s, double car_speed, double goal_speed, double d, double goal_d, double &time) {
+vector<vector<double>> TrajectoryGeneration::selectBest(double s, double goal_s, double car_speed, double goal_speed, double accel, double d, double goal_d, double car_speed_d, double accel_d, double &time) {
   double timestep = 0.5;
   double min_cost = 9999;
   vector<double> min_s_coeff;
@@ -123,8 +134,8 @@ vector<vector<double>> TrajectoryGeneration::selectBest(double s, double goal_s,
   double min_time = time;
   for (int i=0; i<10; i++) {
     double t = time + (i-1)*timestep;
-    auto s_coeff = JMT({s, car_speed, 0}, {goal_s, goal_speed, 0}, t);
-    auto d_coeff = JMT({d, 0, 0}, {goal_d, 0, 0}, t);
+    auto s_coeff = JMT({s, car_speed, accel}, {goal_s, goal_speed, 0}, t);
+    auto d_coeff = JMT({d, car_speed_d, accel_d}, {goal_d, 0, 0}, t);
     double cost = trajectoryCost(s_coeff, d_coeff, t);
     if (cost < min_cost) {
       min_cost = cost;
