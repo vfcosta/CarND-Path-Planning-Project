@@ -40,15 +40,16 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
   if (path_size > 80 && fabs(car_d - goal_d)/lane_width < 0.2) path_size = 80;
 
   int size_consumed = previous_path_s.size() - previous_path_x.size();
-  previous_path_s = vector<double>(previous_path_s.begin()+size_consumed, previous_path_s.end());
-  previous_path_d = vector<double>(previous_path_d.begin()+size_consumed, previous_path_d.end());
-
+  previous_path_s = vector<double>(previous_path_s.begin()+size_consumed, previous_path_s.begin()+size_consumed+path_size);
+  previous_path_d = vector<double>(previous_path_d.begin()+size_consumed, previous_path_d.begin()+size_consumed+path_size);
+  double delta_xy = 0;
   // copy previous path to next vals
   for(int i = 0; i < path_size; i++) {
      next_x_vals.push_back(previous_path_x[i]);
      next_y_vals.push_back(previous_path_y[i]);
   }
   // take cached vals into account when get current vehicle position
+  double curvature_correction = 1;
   if(path_size == 0) {
      pos_x = car_x;
      pos_y = car_y;
@@ -65,12 +66,22 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
      car_d = previous_path_d[path_size-1];
      double car_s2 = previous_path_s[path_size-2];
      double car_d2 = previous_path_d[path_size-2];
-     car_speed = distance(car_s2, car_d, car_s, car_d2)/delay;
+     car_speed = distance(car_s, car_d, car_s2, car_d2)/delay;
+
+     curvature_correction = 0;
+     for (int i = 1; i<path_size; i++) {
+       double delta_xy = distance(previous_path_x[i], previous_path_y[i], previous_path_x[i-1], previous_path_y[i-1]);
+       double delta_s = distance(previous_path_s[i], previous_path_d[i], previous_path_s[i-1], previous_path_d[i-1]);
+       curvature_correction += delta_s/delta_xy;
+     }
+     curvature_correction /= path_size-1;
+     curvature_correction = min(curvature_correction, 1.0);
   }
   // cout << "speed: " << car_speed << " angle: " << angle << " path_size: " << path_size << " goal_d: " << goal_d << endl;
   if (path_size < 100) {
     double time = 1 + fabs(goal_d - car_d)/lane_width;
     goal_speed = max(car_speed - 5/time, min(goal_speed, car_speed + 5/time)); // limit goal_speed
+    goal_speed *= curvature_correction;
     double dv = goal_speed - car_speed;
     double dist_s = car_speed*time + dv*time*0.5;
     // cout << "car_s: " << car_s << " dist_s " << dist_s << endl;
