@@ -105,9 +105,7 @@ int main() {
           	double car_yaw = j[1]["yaw"];
           	double car_speed = j[1]["speed"];
             car_speed *= 0.44704; // convert to km/h
-            if(car_speed>22.35) {
-              cout << "************** SPEEEEEED violated: " << car_speed << endl;
-            }
+
           	// Previous path data given to the Planner
           	auto previous_path_x = j[1]["previous_path_x"];
           	auto previous_path_y = j[1]["previous_path_y"];
@@ -120,7 +118,6 @@ int main() {
             auto new_timestamp = std::chrono::steady_clock::now();
             double dt = std::chrono::duration_cast<std::chrono::microseconds>(new_timestamp - timestamp).count()/1e6;
             acc_dt += dt;
-            // cout << j[1] << endl;
           	json msgJson;
             vehicle.update_data(car_x, car_y, car_s, car_d, car_yaw, car_speed, dt);
             double goal_d = vehicle.lane * 4 + 2;
@@ -128,6 +125,7 @@ int main() {
             double target_speed = vehicle.target_speed;
             auto next_vals = trajectory_generation.generate(car_x, car_y, car_s, car_d, car_yaw, car_speed, goal_d, target_speed, previous_path_x, previous_path_y);
 
+            // run behavior planning
             if (acc_dt >= PLANNING_PERIOD_SECONDS) {
               vector<Vehicle> vehicles;
               for(auto v_data : sensor_fusion) {
@@ -139,10 +137,7 @@ int main() {
               vehicle.update_state(vehicles);
               vehicle.realize_state(vehicles);
               acc_dt = 0;
-              // cout << "LANE: " << vehicle.lane << ", a: " << vehicle.a << endl;
             }
-
-          	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
           	msgJson["next_x"] = next_vals[0];
           	msgJson["next_y"] = next_vals[1];
 

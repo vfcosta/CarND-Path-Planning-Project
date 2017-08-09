@@ -1,6 +1,63 @@
 # CarND-Path-Planning-Project
 Self-Driving Car Engineer Nanodegree Program
-   
+
+## Model Documentation
+
+The solution for this project consist basically of the following:
+
+1. Frenet class: implementation of conversion from frenet coordinates to x,y
+1. TrajectoryGeneration class: generate trajectories based on JMT;
+1. Vehicle class: behavior planning using finite state machine;
+1. main.cpp: uses classes above to make drive the car along track.
+
+### Frenet Conversion
+This class uses spline library to fit a set of s coordinates into x, y, dx and dy values ([frenet.cpp#L37-L42](/src/frenet.cpp#L37-L42)).
+
+An extra value was added at the end of initial vectors to ensure a smooth transition between laps.
+
+### Trajectory Generation
+A implementation of JMT is provived in this class.
+This implementation was used to generate a trajectory with minimal jerk. It usese a goal s and d passed as input to calculate a trajectory.
+
+The trajectory generated reuse the last 10 values from previous path to achieve a smooth transition ([trajectory_generation.cpp#L46](/src/trajectory_generation.cpp#L46)).
+
+A curvature factor was calculated based on the ratio between delta s and delta x, y ([trajectory_generation.cpp#L96-L105](/src/trajectory_generation.cpp#L96-L105)).
+This value was used to adjust the goal speed so the car doesn't accelerate too much in sharp curves.
+
+The time used in JMT is fixed at one second for straight trajectories ([trajectory_generation.cpp#L109](/src/trajectory_generation.cpp#L109)).
+This time is increased by one second when a lane change is involved.
+This strategy proved to be enough to ensure a comfortable lane change.
+
+For each time that trajectory generation is called, multiple trajectories are generated using small variations for time used as input to JMT ([trajectory_generation.cpp#L124](/src/trajectory_generation.cpp#L124)).
+The best one is selected based on the minimal cost in respect to acceleration and speed.
+
+### Vehicle (Behavior Planning)
+A Finite State Machine is implemented in Vehicle class and runs at each 0.5 second.
+It receives as input the current vehicle state and other vehicles predictions.
+It outputs the target speed and a target lane as values to be used in trajectory generation.
+
+The possible states are:
+1. KL: Keep Lane;
+1. LCL: Lane Change Left;
+1. LCR: Lane Change Right;
+1. PLCL: Prepare for Lane Change Left;
+1. PLCR: Prepare for Lane Change Right.
+
+Transitions between those states was defined in [vehicle.cpp#L160](/src/vehicle.cpp#L139);
+
+A cost value is calculated for each possible state ([vehicle.cpp#L96-L98](/src/vehicle.cpp#L87-L89)).
+The final cost for a state is composed of costs based on safety (ensure that no collisions will happens), speed (pursue the fastest lane restricted by the speed limit) and available lanes (avoid forbidden lanes).
+Each one is multiplied by a weight factor, that represents its importance on the final cost.
+
+A transition between state occurrs when there is a state with a lower cost than the current state.
+
+### Main.cpp
+It uses data from simulator to update vehicle state, get data from the behavior planning and use this data as input to generate a trajectory ([main.cpp#L122-L140](/src/main.cpp#L122-L140)).
+
+A sample video of the car driving along the track is available [here](/sample.ogv?raw=true).
+
+-------------------
+
 ### Simulator. You can download the Term3 Simulator BETA which contains the Path Planning Project from the [releases tab](https://github.com/udacity/self-driving-car-sim/releases).
 
 In this project your goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 50 m/s^3.

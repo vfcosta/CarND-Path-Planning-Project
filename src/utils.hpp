@@ -15,6 +15,9 @@ inline double distance(double x1, double y1, double x2, double y2) {
 	return sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
 }
 
+/**
+* Use JMT coefficients to calculate a value given time
+*/
 inline double evaluate_coefficients(vector<double> coeff, double t) {
 	double value = 0;
 	for(int i=0; i<coeff.size(); i++) {
