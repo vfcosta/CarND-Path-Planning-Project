@@ -88,7 +88,7 @@ vector<vector<double>> TrajectoryGeneration::generate(double car_x, double car_y
      curvature_correction /= path_size-1;
      curvature_correction = min(curvature_correction, 1.0);
   }
-  // cout << "speed: " << car_speed << " angle: " << angle << " path_size: " << path_size << " goal_d: " << goal_d << endl;
+  // cout << "speed: " << car_speed << " car_d: " << car_d << " goal_d: " << goal_d << endl;
   if (path_size < 100) {
     double time = 1 + fabs(goal_d - car_d)/lane_width;
     goal_speed = max(car_speed - 5/time, min(goal_speed, car_speed + 5/time)); // limit goal_speed

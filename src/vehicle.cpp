@@ -241,9 +241,9 @@ int Vehicle::_max_accel_for_lane(vector<Vehicle> vehicles, int lane, int s) {
   this->target_speed = max_speed;
   if(leading_index >= 0) {
     int next_pos = vehicles[leading_index].s;
-    int my_next = s + this->v*1.5;
+    int my_next = s + this->v*1;
     int separation_next = next_pos - my_next;
-    cout << "next_pos: " << next_pos << " my_next: " << my_next << endl;
+    // cout << "next_pos: " << next_pos << " my_next: " << my_next << endl;
     // cout << lane << " separation: " << separation_next << " v: " << vehicles[leading_index].v << endl;
     int available_room = separation_next - preferred_buffer;
     if (separation_next < preferred_buffer) {

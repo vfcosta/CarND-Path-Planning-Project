@@ -28,7 +28,7 @@ public:
 
   int L = 4;
 
-  int preferred_buffer = 2*L; // impacts "keep lane" behavior.
+  int preferred_buffer = L; // impacts "keep lane" behavior.
 
   int lane = -1;
 

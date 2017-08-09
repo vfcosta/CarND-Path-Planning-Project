@@ -12,7 +12,7 @@
 #include "utils.hpp"
 #include "vehicle.hpp"
 
-#define PLANNING_PERIOD_SECONDS 1
+#define PLANNING_PERIOD_SECONDS 0.5
 
 using namespace std;
 
@@ -124,6 +124,7 @@ int main() {
           	json msgJson;
             vehicle.update_data(car_x, car_y, car_s, car_d, car_yaw, car_speed, dt);
             double goal_d = vehicle.lane * 4 + 2;
+            goal_d = min(9.8, goal_d); // prevent car to go outside lane
             double target_speed = vehicle.target_speed;
             auto next_vals = trajectory_generation.generate(car_x, car_y, car_s, car_d, car_yaw, car_speed, goal_d, target_speed, previous_path_x, previous_path_y);
 
